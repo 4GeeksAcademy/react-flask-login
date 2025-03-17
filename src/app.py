@@ -3,13 +3,17 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 import os
 from flask import Flask, request, jsonify, url_for, send_from_directory
+
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
-from api.models import db
+from api.models import db,User
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+
+from flask_jwt_extended import JWTManager
+
 
 # from models import Person
 
@@ -30,12 +34,15 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
-
+      
 # add the admin
 setup_admin(app)
 
 # add the admin
 setup_commands(app)
+
+app.config["JWT_SECRET_KEY"] = "super-secret holakd"  # Change this!
+jwt=JWTManager(app)
 
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
@@ -48,7 +55,7 @@ def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
 # generate sitemap with all your endpoints
-
+             
 
 @app.route('/')
 def sitemap():
@@ -64,8 +71,37 @@ def serve_any_other_file(path):
     response = send_from_directory(static_file_dir, path)
     response.cache_control.max_age = 0  # avoid cache memory
     return response
+    
+    
+
+       
 
 
+# @app.route("/signup",methods=["POST"])
+# def signup():
+#       body =request.get_json()
+#       print()
+#       user=User.query.filter_by(email=body["email"]).first()
+#     #   email = request.json.get("email", None)
+#     #   password = request.json.get("password", None)
+#       print(user) 
+
+#       if user != None:
+#        return jsonify({"msg":"Usuario ya existe"})
+
+
+#       user=User.query.filter_by(email=body["email"],password=body["password"],is_active=True)
+#       db.session.add(user)
+#       db.session.commit()
+#       response_body={
+#             "msg":"Usuario creado"
+#       }
+#       return jsonify(response_body)
+
+   
+        
+     
+    
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3001))
